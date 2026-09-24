@@ -23,7 +23,18 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
-        const tg = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id: number; first_name: string; username?: string } }; ready: () => void; expand: () => void } } }).Telegram?.WebApp;
+        const tg = (window as unknown as {
+          Telegram?: {
+            WebApp?: {
+              initDataUnsafe?: {
+                user?: { id: number; first_name: string; username?: string };
+              };
+              ready: () => void;
+              expand: () => void;
+            };
+          };
+        }).Telegram?.WebApp;
+
         if (tg) {
           tg.ready();
           tg.expand();
@@ -34,7 +45,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     } catch {
-      // Running in standard browser
       setIsTMA(false);
     }
   }, []);
