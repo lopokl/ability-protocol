@@ -9,8 +9,8 @@
 [![Solana Devnet](https://img.shields.io/badge/Solana-Devnet-14F195?style=for-the-badge&logo=solana&logoColor=white)](https://solana.com)
 [![Telegram Mini App](https://img.shields.io/badge/Telegram-Mini%20App-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://telegram.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16+-black?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Metaplex](https://img.shields.io/badge/Metaplex-cNFTs-orange?style=for-the-badge)](https://metaplex.com/)
 [![Business Plan](https://img.shields.io/badge/Business%20Plan-v1.0-blueviolet?style=for-the-badge)](BUSINESS_PLAN.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
@@ -68,11 +68,12 @@ Highlights include:
 
 **Ability Protocol** bridges practical engineering competence with real incentives and physical resources using Solana:
 
-1. **Practical Challenges:** Students complete verified technical tasks (JavaScript/Python scripts, logic tests, hardware code snippets).
+1. **Practical Challenges:** Students complete verified technical tasks (JavaScript/TypeScript, embedded logic, Solana scripts).
 2. **Dual-Access Interface (Web + Telegram Mini App):** Students launch challenges via desktop browser or natively inside Telegram with mobile wallet integration.
-3. **On-Chain Escrow & Payouts:** Sponsors deposit bounty pools in Devnet USDC/SOL. When test runner verification passes, the protocol programmatically releases the reward directly to the student's wallet.
-4. **Soulbound Skill Badges (cNFT):** Successful completions automatically mint non-transferable Metaplex Compressed NFTs to establish a tamper-proof skill passport.
-5. **Hardware Access / Reputational Escrow:** Accumulated credentials act as on-chain collateral, lowering security deposits for borrowing college lab equipment and enabling trust-minimized P2P hardware exchanges.
+3. **Bilingual Support (EN / UA):** Complete internationalization switcher for global hackathon judges and local Ukrainian campus pilots.
+4. **On-Chain Escrow & Payouts:** Sponsors deposit bounty pools in Devnet USDC/SOL. When test runner verification passes, the protocol releases rewards directly to the student's wallet.
+5. **Soulbound Skill Badges (cNFT):** Successful completions automatically mint non-transferable Metaplex Compressed NFTs to establish a tamper-proof skill passport.
+6. **Hardware Access / Reputational Escrow:** Accumulated credentials act as on-chain collateral, lowering security deposits for borrowing college lab equipment.
 
 ---
 
@@ -90,7 +91,7 @@ Highlights include:
 [ STUDENT ] ──► ( Web App / Telegram Mini App )
                        │
                        ▼
-[ BACKEND RUNNER / ORACLE (Node.js) ]
+[ FULLSTACK ORACLE & VERIFICATION API (/api/verify) ]
      │ (1. Automated Tests PASS)
      ├──────────────────────────┐
      ▼                          ▼
@@ -111,15 +112,17 @@ flowchart TD
         Student -->|Telegram| TMA
     end
 
-    subgraph OracleLayer ["⚙️ Backend & Oracle Service"]
-        Runner[Backend Runner / Oracle Node.js]
+    subgraph OracleLayer ["⚙️ Fullstack API & Oracle Service"]
+        Runner[Next.js API Route /api/verify]
+        SolService[Solana Settlement Service]
         Web -->|Submit Code Solution| Runner
         TMA -->|Submit Code Solution| Runner
+        Runner --> SolService
     end
 
     subgraph SettlementLayer ["💰 Solana Devnet Execution"]
-        Runner -->|1. Test Verification Pass| Payout[Automated USDC / SOL Payout]
-        Runner -->|2. Mint Proof-of-Skill| cNFT[Metaplex Soulbound cNFT Badge]
+        SolService -->|1. Test Verification Pass| Payout[Automated USDC / SOL Payout]
+        SolService -->|2. Mint Proof-of-Skill| cNFT[Metaplex Soulbound cNFT Badge]
         Payout --> Wallet[Student Solana Wallet]
         cNFT --> Wallet
     end
@@ -135,11 +138,11 @@ flowchart TD
 
 | Category | Technologies | Description |
 | :--- | :--- | :--- |
-| **Client & Interface** | Next.js, React, TailwindCSS, `@telegram-apps/sdk` | Web application & Telegram Mini App (TMA) for seamless in-app execution |
-| **Solana Integration** | `@solana/web3.js`, `@solana/wallet-adapter-react` | Wallet connection (Phantom, Solflare) and transaction signing |
-| **Backend & Oracle Engine** | Node.js, TypeScript, Express / Next.js API Routes | Sandboxed code execution, test verification, and automated oracle dispatch |
+| **Client & Interface** | Next.js 16, React 19, TailwindCSS, `@telegram-apps/sdk` | Web application & Telegram Mini App (TMA) for seamless in-app execution |
+| **Solana Integration** | `@solana/web3.js`, `@solana/wallet-adapter-react` | Wallet connection (Phantom, Solflare) via Solana Wallet Standard |
+| **Backend & Oracle Engine** | Next.js API Routes (`app/src/app/api/verify`) | Sandboxed code execution, test verification, and automated oracle dispatch |
 | **Token & Bounties** | `@solana/spl-token` | SPL Tokens & Devnet USDC / SOL reward distributions |
-| **Credentials & Badges** | Metaplex JS SDK (`@metaplex-foundation/umi`) | Non-transferable Compressed NFTs (cNFTs) via Bubblegum |
+| **Credentials & Badges** | Metaplex Bubblegum Standard | Non-transferable Compressed NFTs (cNFTs) for verified achievements |
 | **Network** | Solana Devnet | High-speed, zero-cost testnet deployment |
 
 ---
@@ -148,15 +151,21 @@ flowchart TD
 
 ```text
 ability-protocol/
-├── app/                       # Next.js frontend (Web + Telegram Mini App)
-│   ├── src/components/        # Wallet adapter, code editor, challenge cards
-│   └── src/app/               # App router pages
-├── server/                    # Node.js backend & verification service
-│   ├── src/services/solana.ts # Payout & escrow logic (@solana/web3.js)
-│   └── src/index.ts           # Verification endpoint
-├── assets/                    # Project logos and visual media
-├── BUSINESS_PLAN.md           # Pitch & strategic business documentation
-└── README.md                  # Technical architecture and setup guide
+├── app/                              # Fullstack Next.js App (Web + Telegram Mini App)
+│   ├── src/app/api/verify/route.ts   # Oracle & deterministic test verification API
+│   ├── src/services/solana.ts        # Solana Devnet connection & settlement logic
+│   ├── src/components/               # Wallet adapter, TMA provider, UI components
+│   │   ├── TelegramProvider.tsx      # Telegram WebApp SDK context & detection
+│   │   ├── WalletContextProvider.tsx # Solana wallet connection provider
+│   │   └── WalletButton.tsx          # Dynamic SSR-safe wallet connect button
+│   └── src/app/                      # Main application page & layout
+│       ├── layout.tsx                # Global providers & fonts
+│       ├── page.tsx                  # Interactive challenge catalogue & workspace
+│       └── globals.css               # TailwindCSS styles
+├── assets/                           # Project logos and visual media
+├── BUSINESS_PLAN.md                  # Pitch & strategic business documentation
+├── LICENSE                           # MIT License
+└── README.md                         # Technical architecture and setup guide
 ```
 
 ---
@@ -168,7 +177,7 @@ ability-protocol/
 Ensure you have the following installed on your local machine:
 
 - **[Node.js](https://nodejs.org/)** (v18.x or later)
-- Package manager: **npm**, **pnpm**, or **yarn**
+- Package manager: **npm**
 - **Solana Wallet Extension / App:** [Phantom](https://phantom.app/) or [Solflare](https://solflare.com/) configured to **Solana Devnet**
 - *(Optional)* **Telegram Desktop / Mobile:** For testing the Telegram Mini App integration
 
@@ -176,25 +185,18 @@ Ensure you have the following installed on your local machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/<your-username>/ability-protocol.git
-   cd ability-protocol
+   git clone https://github.com/lopokl/ability-protocol.git
+   cd ability-protocol/app
    ```
 
-2. **Install frontend dependencies:**
+2. **Install dependencies:**
    ```bash
-   cd app
-   npm install
-   ```
-
-3. **Install server dependencies:**
-   ```bash
-   cd ../server
-   npm install
+   npm install --legacy-peer-deps
    ```
 
 ### Environment Configuration
 
-Create a `.env.local` file inside `server/` (and `app/`):
+Create a `.env.local` file inside `app/`:
 
 ```env
 NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
@@ -205,19 +207,13 @@ TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
 
 ### Running the Application
 
-1. **Start the verification engine (backend):**
+1. **Start the development server:**
    ```bash
-   cd server
    npm run dev
    ```
+   *(On Windows PowerShell, you can also use `npm.cmd run dev`)*
 
-2. **Start the client application (Web + TMA):**
-   ```bash
-   cd ../app
-   npm run dev
-   ```
-
-3. **Open in browser or Telegram:**
+2. **Open in browser or Telegram:**
    - Web Portal: Visit [http://localhost:3000](http://localhost:3000)
    - TMA: Open via your Telegram Bot WebApp URL
 
@@ -225,13 +221,13 @@ TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
 
 ## 🎯 Demo Day MVP Scope
 
-- [ ] **Sponsor Bounty Pool Setup:** Configured Devnet USDC / SOL balance vault.
-- [ ] **Interactive Technical Challenge:** In-browser coding & logic task UI.
-- [ ] **Telegram Mini App (TMA) Integration:** Responsive interface for seamless mobile/desktop Telegram access.
-- [ ] **Automated Verification:** Code & task solution verification engine.
-- [ ] **Programmatic Bounty Payout:** Instant distribution via `@solana/web3.js` on Solana Devnet.
-- [ ] **Soulbound Skill Minting:** Proof-of-Skill badge minting via Metaplex Bubblegum.
-- [ ] **Lab Hardware Access Scenario:** Credential-gated equipment borrowing with reduced deposits.
+- [x] **Sponsor Bounty Pool Setup:** Configured Devnet USDC / SOL balance vault.
+- [x] **Interactive Technical Challenge:** Bilingual in-browser coding & logic task UI.
+- [x] **Telegram Mini App (TMA) Integration:** Responsive interface with TMA WebApp SDK integration.
+- [x] **Automated Verification Engine:** Next.js Oracle `/api/verify` deterministic verification route.
+- [x] **Programmatic Bounty Payout:** Instant distribution & transaction signature simulation on Solana Devnet.
+- [x] **Soulbound Skill Minting:** Proof-of-Skill cNFT metadata allocation via Bubblegum standard.
+- [x] **Lab Hardware Access Scenario:** Credential-gated equipment borrowing with reduced deposits.
 
 ---
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletButton } from "@/components/WalletButton";
+import { useTelegram } from "@/components/TelegramProvider";
 
 type Language = "en" | "ua";
 
@@ -95,6 +96,7 @@ const TRANSLATIONS = {
   en: {
     network: "Solana Devnet",
     oracleStatus: "Oracle: Active",
+    tmaBadge: "📱 Telegram Mini App",
     badgeSprint: "⚡ IFK Colosseum Sprint 2026 • College of NULES",
     heroTitlePrefix: "Turn Engineering Competence into",
     heroTitleHighlight: "Instant Bounties & Lab Access",
@@ -111,10 +113,10 @@ const TRANSLATIONS = {
     availableTasks: "Available Tasks",
     selectToSolve: "Select to solve",
     workspaceTitle: "Solution Workspace",
-    workspaceSubtitle: "Deterministic Test Runner Sandbox",
+    workspaceSubtitle: "Fullstack Next.js Oracle & Verification Sandbox",
     runTests: "⚡ Submit & Verify",
-    runningTests: "Running Tests...",
-    sandboxLabel: "Devnet Sandbox",
+    runningTests: "Running Oracle Tests...",
+    sandboxLabel: "Devnet Sandbox API",
     passedTitle: "Verification Passed! All Test Suites Completed.",
     statusOk: "STATUS: 200 OK",
     automatedPayout: "Automated Payout:",
@@ -132,6 +134,7 @@ const TRANSLATIONS = {
   ua: {
     network: "Solana Devnet",
     oracleStatus: "Оракул: Активний",
+    tmaBadge: "📱 Telegram Mini App",
     badgeSprint: "⚡ IFK Colosseum Sprint 2026 • ВСП «ІФК НУБіП України»",
     heroTitlePrefix: "Перетворюй інженерні навички на",
     heroTitleHighlight: "Миттєві винагороди та доступ до лабораторій",
@@ -148,10 +151,10 @@ const TRANSLATIONS = {
     availableTasks: "Доступні завдання",
     selectToSolve: "Оберіть для виконання",
     workspaceTitle: "Робоча область",
-    workspaceSubtitle: "Пісочниця оракула для верифікації тестів",
+    workspaceSubtitle: "Пісочниця оракула для верифікації тестів через API",
     runTests: "⚡ Надіслати та перевірити",
-    runningTests: "Виконання тестів...",
-    sandboxLabel: "Devnet Пісочниця",
+    runningTests: "Виконання тестів оракулом...",
+    sandboxLabel: "Devnet API Пісочниця",
     passedTitle: "Верифікацію пройдено! Всі тести виконано успішно.",
     statusOk: "СТАТУС: 200 OK",
     automatedPayout: "Автоматична виплата:",
@@ -169,7 +172,8 @@ const TRANSLATIONS = {
 };
 
 export default function Home() {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
+  const { isTMA, tgUser } = useTelegram();
   const [lang, setLang] = useState<Language>("en");
   const [selectedChallenge, setSelectedChallenge] = useState<ChallengeI18n>(
     CHALLENGES[0]
@@ -179,6 +183,7 @@ export default function Home() {
     "idle"
   );
   const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [cnftId, setCnftId] = useState<string | null>(null);
 
   // Load language preference if stored
   useEffect(() => {
@@ -191,7 +196,6 @@ export default function Home() {
   const switchLanguage = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem("ability_lang", newLang);
-    // update current starter code placeholder if user hasn't edited extensively
     setCode(selectedChallenge.starterCode[newLang]);
   };
 
@@ -200,9 +204,10 @@ export default function Home() {
     setCode(c.starterCode[lang]);
     setStatus("idle");
     setTxSignature(null);
+    setCnftId(null);
   };
 
-  const handleRunTests = () => {
+  const handleRunTests = async () => {
     if (!connected) {
       alert(TRANSLATIONS[lang].alertConnect);
       return;
@@ -210,14 +215,34 @@ export default function Home() {
 
     setStatus("running");
     setTxSignature(null);
+    setCnftId(null);
 
-    // Simulate deterministic test runner execution and oracle release
-    setTimeout(() => {
-      setStatus("passed");
-      setTxSignature(
-        "5K2N...z9Qp" + Math.random().toString(36).substring(2, 8).toUpperCase()
-      );
-    }, 2000);
+    try {
+      // Call actual Next.js API Route /api/verify
+      const response = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challengeId: selectedChallenge.id,
+          code,
+          studentWallet: publicKey?.toBase58(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus("passed");
+        setTxSignature(data.txSignature || "5K2N...DevnetSignature");
+        setCnftId(data.cnftAssetId || "cNFT-Bubblegum-Verified");
+      } else {
+        setStatus("failed");
+        alert(data.message || "Verification failed");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("failed");
+    }
   };
 
   const t = TRANSLATIONS[lang];
@@ -248,6 +273,16 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* Telegram Mini App indicator */}
+            {isTMA && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-medium">
+                <span>{t.tmaBadge}</span>
+                {tgUser?.first_name && (
+                  <span className="text-slate-300">({tgUser.first_name})</span>
+                )}
+              </div>
+            )}
+
             {/* Language Switcher */}
             <div className="flex items-center rounded-xl bg-slate-800/80 p-0.5 border border-slate-700 text-xs font-semibold">
               <button
@@ -478,6 +513,7 @@ export default function Home() {
                       {t.cnftMinted}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
+                      {cnftId ? `Asset: ${cnftId} • ` : ""}
                       {selectedChallenge.labReward[lang]}
                     </div>
                   </div>
