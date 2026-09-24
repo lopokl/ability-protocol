@@ -2,6 +2,7 @@
   "name": "server",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Ability Protocol - Backend & Oracle Verification Engine",
   "main": "dist/index.js",
   "scripts": {
